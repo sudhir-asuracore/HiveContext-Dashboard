@@ -7,8 +7,8 @@ export async function GET() {
   try {
     const cluster = await getClusterInfo();
     const databases = await getProvisionedDatabases(DEFAULT_TENANT_ID);
-    const mcpServerUrl = process.env.NEXT_PUBLIC_MCP_SERVER_URL || process.env.MCP_SERVER_URL || 'https://<your-fastmcp-lambda-url>.lambda-url.<region>.on.aws';
-    const apiKey = process.env.HIVE_CONTEXT_SERVER_TOKEN || process.env.NEXT_PUBLIC_MCP_SECRET_TOKEN || process.env.MCP_SECRET_TOKEN || 'hive_sk_your_bearer_token';
+    const mcpServerUrl = process.env.NEXT_PUBLIC_MCP_SERVER_URL || process.env.MCP_SERVER_URL || 'https://nwlon72fjr2ekajao26cwxqfse0wedtn.lambda-url.ap-south-1.on.aws';
+    const apiKey = process.env.HIVE_CONTEXT_SERVER_TOKEN || process.env.NEXT_PUBLIC_MCP_SECRET_TOKEN || process.env.MCP_SECRET_TOKEN || 'hive_sk_osstenant01';
 
     return NextResponse.json({
       success: true,

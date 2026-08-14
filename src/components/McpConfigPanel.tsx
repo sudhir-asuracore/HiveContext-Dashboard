@@ -9,10 +9,28 @@ export default function McpConfigPanel() {
   const [selectedSpaceId, setSelectedSpaceId] = useState(activeSpace.id);
   const [clientType, setClientType] = useState<'antigravity' | 'cursor' | 'stdio'>('antigravity');
   const [copied, setCopied] = useState(false);
+  const [serverInfo, setServerInfo] = useState<{ mcpServerUrl: string; apiKey: string }>({
+    mcpServerUrl: process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'https://nwlon72fjr2ekajao26cwxqfse0wedtn.lambda-url.ap-south-1.on.aws',
+    apiKey: process.env.NEXT_PUBLIC_MCP_SECRET_TOKEN || 'hive_sk_osstenant01'
+  });
+
+  React.useEffect(() => {
+    fetch('/api/ccloud')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          setServerInfo({
+            mcpServerUrl: data.mcpServerUrl || serverInfo.mcpServerUrl,
+            apiKey: data.apiKey || serverInfo.apiKey
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const currentSpace = availableSpaces.find(s => s.id === selectedSpaceId) || activeSpace;
-  const rawServerUrl = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'https://<your-fastmcp-lambda-url>.lambda-url.<region>.on.aws';
-  const serverToken = process.env.NEXT_PUBLIC_MCP_SECRET_TOKEN || 'hive_sk_your_bearer_token';
+  const rawServerUrl = serverInfo.mcpServerUrl;
+  const serverToken = serverInfo.apiKey;
   const mcpEndpointUrl = rawServerUrl.replace(/\/$/, '') + '/sse';
 
   let jsonConfig = {};
