@@ -1,0 +1,39 @@
+{
+  "name": "hivecontext-dashboard",
+  "version": "1.0.0",
+  "description": "The central control panel and memory management console for HiveContext on CockroachDB",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "generate:admin-password-hash": "node scripts/generate-admin-password-hash.mjs",
+    "amplify:sync": "node scripts/setup-amplify.js"
+  },
+  "dependencies": {
+    "@auth/pg-adapter": "^1.11.3",
+    "@aws-sdk/client-bedrock-runtime": "^3.1095.0",
+    "gray-matter": "^4.0.3",
+    "lucide-react": "^1.26.0",
+    "next": "16.2.11",
+    "next-auth": "^5.0.0-beta.32",
+    "nodemailer": "^8.0.11",
+    "pg": "^8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.11",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
