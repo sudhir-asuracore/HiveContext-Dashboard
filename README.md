@@ -6,7 +6,7 @@ The dashboard provides engineering teams with human-in-the-loop oversight over A
 
 ---
 
-## 🖥️ Dashboard Overview & Key Features
+## Dashboard Overview & Key Features
 
 ![HiveContext Dashboard Preview](docs/images/dashboard-preview.png)
 
