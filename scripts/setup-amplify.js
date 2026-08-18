@@ -25,8 +25,13 @@ function getEnvVars() {
         if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
           val = val.slice(1, -1);
         }
-        // Unescape \$ to $ 
-        val = val.replaceAll('\\$', '$');
+        // For ADMIN_PASSWORD_HASH, ensure $ are escaped with backslashes so Amplify CodeBuild Bash doesn't corrupt it
+        if (key === 'ADMIN_PASSWORD_HASH') {
+          val = val.replace(/\\+/g, '').replaceAll('$', '\\$');
+        } else {
+          // Unescape \$ to $ for other variables
+          val = val.replaceAll('\\$', '$');
+        }
         envMap[key] = val;
       }
     }
