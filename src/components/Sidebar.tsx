@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, BarChart2, Trash2, Settings } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, BarChart2, Trash2, Settings, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { href: '/console/dashboard', label: 'Console Dashboard', icon: Home, exact: true },
@@ -19,7 +21,18 @@ export default function Sidebar() {
     return pathname?.startsWith(href);
   };
 
-
+  const handleLogout = async () => {
+    try {
+      // Clear credentials session cookie
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout error', e);
+    }
+    // Sign out from Auth.js / Google OAuth if active and redirect to login
+    await signOut({ callbackUrl: '/login', redirect: true });
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <aside className="sticky top-0 h-screen w-16 border-r border-[#222] bg-[#0a0a0a] flex flex-col items-center py-6 gap-6 shrink-0 z-50 overflow-y-auto overflow-x-hidden">
@@ -56,6 +69,15 @@ export default function Sidebar() {
           HIVECONTEXT
         </Link>
 
+        {/* Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Sign out of Console"
+          className="w-10 h-10 rounded flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-950/30 transition-all duration-200 cursor-pointer border border-transparent hover:border-red-900/50"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </aside>
   );
