@@ -34,8 +34,9 @@ export default function Dashboard() {
   const [editScope, setEditScope] = useState<'global' | 'project'>('global');
   const [editProjectName, setEditProjectName] = useState('');
   
-  // Scope Filter State
+  // Scope Filter & Search Query State
   const [scopeFilter, setScopeFilter] = useState<'all' | 'global' | 'project'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Delete Confirm Modal State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -59,8 +60,8 @@ export default function Dashboard() {
   const PENDING_PAGE_SIZE = 5;
 
   // Memory Management Sorting & Pagination
-  const [memorySortField, setMemorySortField] = useState<'status' | 'context_type' | 'topic' | 'content' | 'retrieval_count'>('topic');
-  const [memorySortOrder, setMemorySortOrder] = useState<'asc' | 'desc'>('asc');
+  const [memorySortField, setMemorySortField] = useState<'created_at' | 'context_type' | 'topic' | 'project_name' | 'retrieval_count'>('created_at');
+  const [memorySortOrder, setMemorySortOrder] = useState<'asc' | 'desc'>('desc');
   const [memoryPage, setMemoryPage] = useState(1);
   const MEMORY_PAGE_SIZE = 8;
 
@@ -112,13 +113,31 @@ export default function Dashboard() {
   const memoryItems = contexts.filter(c => {
     if (c.status === 'pending' || c.status === 'deleted') return false;
     
-    if (scopeFilter === 'global') return c.scope === 'global' || !c.scope;
-    if (scopeFilter === 'project') return c.scope === 'project';
+    if (scopeFilter === 'global' && !(c.scope === 'global' || !c.scope)) return false;
+    if (scopeFilter === 'project' && c.scope !== 'project') return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchTopic = (c.topic || '').toLowerCase().includes(q);
+      const matchContent = (c.content || '').toLowerCase().includes(q);
+      const matchType = (c.context_type || '').toLowerCase().includes(q);
+      const matchProject = (c.scope === 'project' ? (c.project_name || '') : 'global').toLowerCase().includes(q);
+      if (!matchTopic && !matchContent && !matchType && !matchProject) {
+        return false;
+      }
+    }
+
     return true;
   }).sort((a, b) => {
     let valA: any = a[memorySortField] || '';
     let valB: any = b[memorySortField] || '';
-    if (memorySortField === 'retrieval_count') {
+    if (memorySortField === 'created_at') {
+      valA = new Date(a.created_at).getTime();
+      valB = new Date(b.created_at).getTime();
+    } else if (memorySortField === 'project_name') {
+      valA = a.scope === 'project' ? (a.project_name || '') : 'global';
+      valB = b.scope === 'project' ? (b.project_name || '') : 'global';
+    } else if (memorySortField === 'retrieval_count') {
       valA = Number(a.retrieval_count || 0);
       valB = Number(b.retrieval_count || 0);
     }
@@ -184,12 +203,24 @@ export default function Dashboard() {
     return num.toString();
   };
 
+  const formatCreatedDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = d.getDate();
+      const month = d.toLocaleString('en-US', { month: 'short' });
+      return `${day},${month}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const renderScopeBadge = (scope?: string, projectName?: string) => {
     if (scope === 'project' && projectName) {
       return (
-        <span className="bg-purple-900/40 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase inline-flex items-center gap-1">
-          <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
-          PROJ: {projectName}
+        <span className="bg-purple-900/40 text-purple-300 border border-purple-700/50 px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase inline-flex items-center gap-1 truncate max-w-[130px]" title={`Project: ${projectName}`}>
+          <span className="w-1.5 h-1.5 bg-purple-400 rounded-full shrink-0"></span>
+          <span className="truncate">{projectName}</span>
         </span>
       );
     }
@@ -481,9 +512,9 @@ export default function Dashboard() {
 
             {/* Active & Disabled Ledger */}
             <section>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
                 <h2 className="text-xl text-white uppercase tracking-widest">Memory Management</h2>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
                   <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase">
                     <span className="text-slate-500">Filter Scope:</span>
                     <select
@@ -496,58 +527,79 @@ export default function Dashboard() {
                       <option value="project">PROJECT-SPECIFIC</option>
                     </select>
                   </div>
-                  <span className="text-xs text-slate-500 uppercase border-l border-[#222] pl-4">Page Limit: {MEMORY_PAGE_SIZE}</span>
+                  
+                  {/* Search Input Box */}
+                  <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase">
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setMemoryPage(1); }}
+                        placeholder="SEARCH MEMORIES..."
+                        className="bg-[#141414] border border-[#333] text-white text-xs px-3 py-1 pr-7 focus:outline-none focus:border-red-600 font-mono placeholder:text-slate-600 w-44 sm:w-56"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => { setSearchQuery(''); setMemoryPage(1); }}
+                          className="absolute right-2 text-slate-500 hover:text-white text-[10px] font-mono cursor-pointer"
+                          title="Clear search"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <span className="text-xs text-slate-500 uppercase border-l border-[#222] pl-4 hidden lg:inline">Page Limit: {MEMORY_PAGE_SIZE}</span>
                 </div>
               </div>
+
               <div className="text-xs uppercase text-slate-500 grid grid-cols-12 pb-3 border-b border-[#222] font-bold">
-                <div onClick={() => handleMemorySort('status')} className="col-span-1 cursor-pointer hover:text-white transition-colors select-none flex items-center">
-                  Status {renderSortIndicator(memorySortField, 'status', memorySortOrder)}
+                <div onClick={() => handleMemorySort('created_at')} className="col-span-2 cursor-pointer hover:text-white transition-colors select-none flex items-center px-2">
+                  Created {renderSortIndicator(memorySortField, 'created_at', memorySortOrder)}
                 </div>
-                <div onClick={() => handleMemorySort('context_type')} className="col-span-2 cursor-pointer hover:text-white transition-colors select-none flex items-center">
+                <div onClick={() => handleMemorySort('context_type')} className="col-span-2 cursor-pointer hover:text-white transition-colors select-none flex items-center px-2">
                   Type {renderSortIndicator(memorySortField, 'context_type', memorySortOrder)}
                 </div>
                 <div onClick={() => handleMemorySort('topic')} className="col-span-3 cursor-pointer hover:text-white transition-colors select-none flex items-center">
                   Topic {renderSortIndicator(memorySortField, 'topic', memorySortOrder)}
                 </div>
-                <div onClick={() => handleMemorySort('content')} className="col-span-2 cursor-pointer hover:text-white transition-colors select-none flex items-center">
-                  Rule Preview {renderSortIndicator(memorySortField, 'content', memorySortOrder)}
+                <div onClick={() => handleMemorySort('project_name')} className="col-span-2 cursor-pointer hover:text-white transition-colors select-none flex items-center">
+                  Project {renderSortIndicator(memorySortField, 'project_name', memorySortOrder)}
                 </div>
                 <div onClick={() => handleMemorySort('retrieval_count')} className="col-span-1 cursor-pointer hover:text-white transition-colors select-none flex items-center justify-center">
                   Hits {renderSortIndicator(memorySortField, 'retrieval_count', memorySortOrder)}
                 </div>
-                <div className="col-span-3 text-right select-none">Admin Actions</div>
+                <div className="col-span-2 text-right select-none pr-2">Admin Actions</div>
               </div>
               
               <div className="flex flex-col">
                 {paginatedMemory.map((ctx) => (
                   <div key={ctx.id} onClick={() => startEdit(ctx)} className="grid grid-cols-12 items-center text-[10px] md:text-xs uppercase py-4 border-b border-[#222] hover:bg-slate-900 cursor-pointer transition-colors group">
-                    <div className="col-span-1 px-2">
-                      <span className={['approved', 'auto_approved'].includes(ctx.status) ? (ctx.status === 'auto_approved' ? 'text-blue-500 font-bold' : 'text-emerald-500 font-bold') : 'text-slate-600 font-bold'}>
-                        {ctx.status === 'auto_approved' ? 'AUTO' : (ctx.status === 'approved' ? 'ON' : 'OFF')}
-                      </span>
+                    <div className="col-span-2 px-2 text-slate-400 font-mono">
+                      {formatCreatedDate(ctx.created_at)}
                     </div>
                     <div className="col-span-2 font-bold px-2 flex items-center">{renderContextType(ctx.context_type)}</div>
-                    <div className={`col-span-3 font-bold pr-4 truncate ${!['approved', 'auto_approved'].includes(ctx.status) ? 'text-slate-600' : 'text-white group-hover:text-red-400'}`}>
-                      <div className="flex items-center gap-2">
-                        <span>{ctx.topic}</span>
-                        {renderScopeBadge(ctx.scope, ctx.project_name)}
-                      </div>
+                    <div className={`col-span-3 font-bold pr-4 truncate ${!['approved', 'auto_approved'].includes(ctx.status) ? 'text-slate-600' : 'text-white group-hover:text-red-400'}`} title={ctx.topic}>
+                      {ctx.topic}
                     </div>
-                    <div className={`col-span-2 truncate pr-4 ${!['approved', 'auto_approved'].includes(ctx.status) ? 'text-slate-700' : 'text-slate-400'}`}>{ctx.content}</div>
+                    <div className="col-span-2 truncate pr-4">
+                      {renderScopeBadge(ctx.scope, ctx.project_name)}
+                    </div>
                     <div className="col-span-1 text-center">
                        <span className={['approved', 'auto_approved'].includes(ctx.status) ? 'bg-red-600 text-white px-2 py-1' : 'bg-[#222] text-slate-500 px-2 py-1'}>
                          {ctx.retrieval_count}
                        </span>
                     </div>
-                    <div className="col-span-3 flex items-center justify-end gap-5 pr-2 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="col-span-2 flex items-center justify-end gap-4 pr-2 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
                        
                        {/* Custom Blocky Toggle Switch */}
                        <button 
                          onClick={(e) => { e.stopPropagation(); toggleActiveStatus(ctx.id, ctx.status); }}
-                         className={`w-12 h-6 border flex items-center p-[2px] transition-colors ${['approved', 'auto_approved'].includes(ctx.status) ? 'border-red-600 bg-red-600/10' : 'border-[#444] bg-[#111]'}`}
+                         className={`w-10 h-5 border flex items-center p-[2px] transition-colors ${['approved', 'auto_approved'].includes(ctx.status) ? 'border-red-600 bg-red-600/10' : 'border-[#444] bg-[#111]'}`}
                          title={['approved', 'auto_approved'].includes(ctx.status) ? 'Disable Memory' : 'Enable Memory'}
                        >
-                         <div className={`w-4 h-4 transition-transform ${['approved', 'auto_approved'].includes(ctx.status) ? 'bg-red-600 translate-x-6' : 'bg-[#555] translate-x-0'}`}></div>
+                         <div className={`w-3.5 h-3.5 transition-transform ${['approved', 'auto_approved'].includes(ctx.status) ? 'bg-red-600 translate-x-5' : 'bg-[#555] translate-x-0'}`}></div>
                        </button>
 
                        {/* Delete Text */}
@@ -563,7 +615,7 @@ export default function Dashboard() {
                 ))}
                 {memoryItems.length === 0 && (
                   <div className="py-8 text-center text-slate-600 uppercase tracking-widest border-b border-[#222]">
-                    No active or disabled memories found.
+                    {searchQuery ? `No memories matching "${searchQuery}"` : 'No active or disabled memories found.'}
                   </div>
                 )}
               </div>
