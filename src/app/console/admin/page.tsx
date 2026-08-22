@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import MemorySpaceSelector from '@/components/MemorySpaceSelector';
 import HealthTab from '@/components/HealthTab';
+import LogsTab from '@/components/LogsTab';
 import { useMemorySpace } from '@/context/MemorySpaceContext';
 
 type ActionModalConfig = {
@@ -16,7 +17,7 @@ type ActionModalConfig = {
 
 export default function Admin() {
   const { activeSpace, refreshSpaces } = useMemorySpace();
-  const [activeTab, setActiveTab] = useState<'general' | 'health'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'health' | 'logs'>('general');
   const [resetConfirm, setResetConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -280,7 +281,7 @@ export default function Admin() {
         </h1>
 
         <nav className="flex border-b border-[#333]" aria-label="Settings sections">
-          {(['general', 'health'] as const).map(tab => (
+          {(['general', 'health', 'logs'] as const).map(tab => (
             <button
               key={tab}
               type="button"
@@ -293,6 +294,7 @@ export default function Admin() {
         </nav>
 
         {activeTab === 'health' && <HealthTab />}
+        {activeTab === 'logs' && <LogsTab />}
 
         {activeTab === 'general' && (
           <div className="space-y-10">
